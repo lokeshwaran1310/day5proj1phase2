@@ -1,0 +1,411 @@
+Repo Link
+---------
+https://github.com/lokeshwaran1310/day5proj1phase2
+
+
+Directory structure
+-------------------
+
+└── lokeshwaran1310-day5proj1phase2/
+    ├── README.md
+    ├── pom.xml
+    └── src/
+        ├── main/
+        │   └── java/
+        │       └── com/
+        │           └── day5proj1phase2/
+        │               ├── App.java
+        │               ├── dao/
+        │               │   └── Bugdao.java
+        │               ├── main/
+        │               │   └── Main.java
+        │               ├── models/
+        │               │   └── Bug.java
+        │               └── utils/
+        │                   └── DbUtil.java
+        └── test/
+            └── java/
+                └── com/
+                    └── day5proj1phase2/
+                        └── AppTest.java
+Bug.java
+--------
+
+package com.day5proj1phase2.models;
+
+public class Bug {
+    private int id;
+    private String title;
+    private String description;
+    private String status;
+     public Bug(){
+        
+     }
+    public Bug(int id,String title,String description, String status) {
+        this.title = title;
+        this.description = description;
+        this.status = status;
+    }
+
+    public int getId() {
+      return id;
+    }
+    public String getTitle() {
+        return title;
+    }
+    public String getDescription() {
+        return description;
+    }
+    public String getStatus() {
+        return status;
+    }
+    public void setId(int id) {
+        this.id = id;
+    }
+    public void setTitle(String title) {
+        this.title = title;
+    }
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+
+    
+}
+
+
+DbUtil.java
+-----------
+
+package com.day5proj1phase2.utils;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+
+public class DbUtil {
+    public static Connection getConnection(){
+        Connection con=null;
+        try {
+            Class.forName("org.postgresql.Driver");
+            con=DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres","postgres","Lokesh@123");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return con;
+
+    }
+}
+
+
+
+Bugdao.java
+-----------
+
+package com.day5proj1phase2.dao;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.util.LinkedList;
+import java.util.List;
+
+import com.day5proj1phase2.models.Bug;
+import com.day5proj1phase2.utils.DbUtil;
+
+public class Bugdao {
+    public void insertbBug(Bug b){
+        try {
+           Connection con= DbUtil.getConnection();
+           PreparedStatement ps=con.prepareStatement("insert into bugtable(title,description,status)values(?,?,?)");
+           ps.setString(1,b.getTitle());
+           ps.setString(2,b.getDescription());
+           ps.setString(3,b.getStatus());
+           ps.executeUpdate();
+           System.out.println("Bug inserted Succesfully");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public List<Bug> Display(){
+        List<Bug> l = new LinkedList<>();
+        try {
+            Connection con=DbUtil.getConnection();
+            PreparedStatement p=con.prepareStatement("SELECT * FROM bugtable");
+            ResultSet rs=p.executeQuery();
+            while(rs.next()){
+                  Bug b=new Bug();
+                  b.setId(rs.getInt("id"));
+                    b.setTitle(rs.getString("title"));
+                    b.setDescription(rs.getString("description"));
+                    b.setStatus(rs.getString("status"));
+                    l.add(b);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
+        l.sort((b1, b2) -> Integer.compare(b1.getId(), b2.getId()));
+        return l;
+    }
+    public void update(Bug b){
+        try {
+            Connection con=DbUtil.getConnection();
+            PreparedStatement ps=con.prepareStatement("UPDATE bugtable SET status=? WHERE id=?");   
+            ps.setString(1, b.getStatus());
+            ps.setInt(2, b.getId());
+            ps.executeUpdate();
+            System.out.println("Bug updated successfully");
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void delete(Bug b){
+        try {
+            Connection con=DbUtil.getConnection();
+            PreparedStatement ps=con.prepareStatement("DELETE FROM bugtable WHERE id=?");
+            ps.setInt(1, b.getId());
+            ps.executeUpdate();
+            
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+
+Main.java
+---------
+
+package com.day5proj1phase2.main;
+
+import java.util.List;
+import java.util.Scanner;
+
+import com.day5proj1phase2.dao.Bugdao;
+import com.day5proj1phase2.models.Bug;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        while(true){
+        System.out.println("1.Insert Bug");
+        System.out.println("2.Display all Bug details");
+        System.out.println("3.Delete a Bug by ID");
+        System.out.println("4.Update Bug status by ID");
+        System.out.println("5.Exit");
+        System.out.println("Enter Choice:");
+        int choice = sc.nextInt();
+        switch(choice){
+            case 1:
+                System.out.println("Enter Bug Title:");
+                String title = sc.next();
+                System.out.println("Enter Bug Description:");
+                String description = sc.next();
+                System.out.println("Enter Bug Status:");
+                String status = sc.next();
+                Bug bug = new Bug();
+                bug.setTitle(title);
+                bug.setDescription(description);
+                bug.setStatus(status);
+                Bugdao bugDao = new Bugdao();
+                bugDao.insertbBug(bug);
+                break;
+            case 2:
+                Bugdao bg = new Bugdao();
+                List<Bug> bugList = bg.Display();
+                for (Bug b : bugList) { 
+                    System.out.println("ID: " + b.getId()+", Title: "+ b.getTitle()+", Description: "+b.getDescription()+", Status: " + b.getStatus());
+                }
+
+                break;
+            case 3:
+                System.out.println("Enter Bug ID to delete:");
+                int del = sc.nextInt();
+                Bugdao bd = new Bugdao();    
+                Bug b = new Bug();
+                b.setId(del);
+                bd.delete(b);
+                System.out.println("Bug with ID "+ del+" deleted successfully.");
+                break;
+            case 4:
+                System.out.println("Enter Bug ID to update:");
+                int uid = sc.nextInt();
+                System.out.println("Enter new Bug Status:");
+                String stat = sc.next();
+                Bug ubug = new Bug();
+                ubug.setId(uid);
+                ubug.setStatus(stat);
+                Bugdao bdo = new Bugdao();
+                bdo.update(ubug);
+                System.out.println("Bug with ID "+ uid+" updated successfully.");
+                
+                break;
+            case 5:
+                System.out.println("Exit.");
+                return;
+            default:
+                System.out.println("Invalid choice, please try again.");
+        }
+        
+
+    }
+    }
+}
+
+README.md
+---------
+
+🐞 Simple Bug Tracker – Project 2 (Java + PostgreSQL)
+
+Description:
+This is the second Java-based bug tracking project using JDBC with a PostgreSQL backend. This version includes full CRUD operations — users can insert, view, update, and delete bugs through a menu-driven interface. Bug records include a title, description, status, and auto-incremented id.
+
+Components:
+- DbUtil.java
+  Handles PostgreSQL database connections using JDBC.
+
+- Bug.java
+  Represents the bug model with fields id, title, description, and status.
+
+- Bugdao.java
+  DAO class that performs core database operations:
+  • insertBug() – Adds new bug records.
+  • Display() – Retrieves and returns all bug entries.
+  • update() – Updates the status of a bug by ID.
+  • delete() – Deletes a bug by ID.
+
+- Main.java
+  Main menu-driven application that:
+  • Accepts user input for bug details.
+  • Displays all bug records.
+  • Deletes a bug by ID.
+  • Updates a bug’s status by ID.
+  • Provides a clean exit option.
+
+Design Highlights:
+- Fully modular — separates concerns between model, DAO, utility, and application logic.
+- Interactive menu-driven console UI to manage bugs.
+- Uses PreparedStatement for secure database operations.
+- List of bugs is sorted by ID before display.
+- Built for PostgreSQL using standard JDBC (easily adaptable to other RDBMS).
+- Easily extensible for future features like filtering by status, timestamps, or priority.
+
+Purpose:
+This project enhances the original learning project into a more functional bug tracking system with real-world-style CRUD capabilities. It’s ideal for students or beginners to understand full data flow from Java console input to SQL operations and back.
+
+Author:
+Lokeshwaran M
+lokeshwaran.m@epssw.com
+
+
+OUTPUT
+------
+
+
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+1
+Enter Bug Title:
+akl
+Enter Bug Description:
+axc
+Enter Bug Status:
+zxv
+Bug inserted Succesfully
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+2
+ID: 1, Title: Login issue, Description: Cannot login with credentials, Status: erf
+ID: 2, Title: abc issue, Description: aaaabbbb, Status: wdc
+ID: 3, Title: xyz issue, Description: lllll, Status: ccc
+ID: 5, Title: axc, Description: azx, Status: cvb
+ID: 6, Title: akl, Description: axc, Status: zxv
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+3
+Enter Bug ID to delete:
+6
+Bug with ID 6 deleted successfully.
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+2
+ID: 1, Title: Login issue, Description: Cannot login with credentials, Status: erf
+ID: 2, Title: abc issue, Description: aaaabbbb, Status: wdc
+ID: 3, Title: xyz issue, Description: lllll, Status: ccc
+ID: 5, Title: axc, Description: azx, Status: cvb
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+4
+Enter Bug ID to update:
+5
+Enter new Bug Status:
+aaa
+Bug updated successfully
+Bug with ID 5 updated successfully.
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+2
+ID: 1, Title: Login issue, Description: Cannot login with credentials, Status: erf
+ID: 2, Title: abc issue, Description: aaaabbbb, Status: wdc
+ID: 3, Title: xyz issue, Description: lllll, Status: ccc
+ID: 5, Title: axc, Description: azx, Status: aaa
+1.Insert Bug
+2.Display all Bug details
+3.Delete a Bug by ID
+4.Update Bug status by ID
+5.Exit
+Enter Choice:
+5
+Exit.
+
+
+TABLE
+-----
+postgres=# SELECT * FROM bugtable;
+ id |    title    |          description          | status
+----+-------------+-------------------------------+--------
+  3 | xyz issue   | lllll                         | ccc
+  2 | abc issue   | aaaabbbb                      | wdc
+  1 | Login issue | Cannot login with credentials | erf
+  5 | axc         | azx                           | aaa
+(4 rows)
+
+
+
+
+
+
+
+
+
+
